@@ -196,6 +196,79 @@ textarea {
   gap: 12px;
 }
 
+.batch-watering-bar {
+  display: grid;
+  grid-template-columns: auto minmax(170px, 220px) 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #d8e2cf;
+  border-radius: 8px;
+  background: #f6f8ed;
+}
+
+.batch-watering-bar label {
+  display: grid;
+  gap: 6px;
+  color: #465448;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.batch-watering-bar .select-all-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.batch-watering-bar input[type='checkbox'],
+.reminder-select input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #2f7d4f;
+}
+
+.batch-watering-bar button {
+  white-space: nowrap;
+}
+
+.batch-watering-bar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.batch-result {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+
+.batch-result.complete {
+  color: #23613d;
+  background: #dff0e4;
+}
+
+.batch-result.has-failure {
+  color: #8b5418;
+  background: #fde8bd;
+}
+
+.batch-result p,
+.batch-result ul {
+  margin: 0;
+}
+
+.batch-result ul {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  padding-left: 18px;
+}
+
 .reminder-item,
 .goal-row,
 .ranking-list li {
@@ -215,6 +288,14 @@ textarea {
 .reminder-item p {
   margin: 6px 0 0;
   color: #657266;
+}
+
+.reminder-select {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
 }
 
 .empty-state {
@@ -456,6 +537,15 @@ dd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .batch-watering-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .batch-watering-bar .select-all-control,
+  .batch-watering-bar button {
+    grid-column: 1 / -1;
+  }
+
   .main-grid,
   .profile-layout {
     grid-template-columns: 1fr;
@@ -484,8 +574,14 @@ dd {
   }
 
   .dashboard,
-  .records-grid {
+  .records-grid,
+  .batch-watering-bar {
     grid-template-columns: 1fr;
+  }
+
+  .batch-watering-bar .select-all-control,
+  .batch-watering-bar button {
+    grid-column: auto;
   }
 
   .metric {

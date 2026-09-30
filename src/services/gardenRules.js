@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS } from '../constants/garden'
-import { daysBetween, monthOf, todayISO } from '../utils/date'
+import { addDaysISO, daysBetween, monthOf, todayISO } from '../utils/date'
 
 export function createId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -160,9 +160,7 @@ function countCurrentStreak(descDates) {
 
   while (dates.has(cursor)) {
     streak += 1
-    const date = new Date(`${cursor}T00:00:00`)
-    date.setDate(date.getDate() - 1)
-    cursor = date.toISOString().slice(0, 10)
+    cursor = addDaysISO(cursor, -1)
   }
 
   return streak

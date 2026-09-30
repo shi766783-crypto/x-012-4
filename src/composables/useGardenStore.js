@@ -1,6 +1,6 @@
 import { computed, reactive, watch } from 'vue'
 import { DEFAULT_GOALS } from '../constants/garden'
-import { todayISO } from '../utils/date'
+import { isISODate, todayISO } from '../utils/date'
 import { loadGardenState, saveGardenState } from '../services/storage'
 import {
   buildLeaderboards,
@@ -98,6 +98,15 @@ const demoState = {
   goals: DEFAULT_GOALS,
 }
 
+function getLatestWateringDate(plant, careRecords) {
+  return careRecords.reduce((latestDate, record) => {
+    if (record.type === '浇水' && record.plantId === plant.id && record.date > latestDate) {
+      return record.date
+    }
+    return latestDate
+  }, plant.lastWateredDate || '')
+}
+
 export function useGardenStore() {
   const storedState = loadGardenState()
   const state = reactive(storedState || demoState)
@@ -136,8 +145,75 @@ export function useGardenStore() {
 
     if (record.type === '浇水') {
       const plant = state.plants.find((item) => item.id === record.plantId)
-      if (plant) plant.lastWateredDate = record.date
+      const latestDate = plant ? getLatestWateringDate(plant, state.careRecords) : ''
+      if (plant && (!latestDate || record.date >= latestDate)) {
+        plant.lastWateredDate = record.date
+      }
     }
+  }
+
+  function batchWaterPlants({ plantIds = [], date = todayISO(), amount = '', note = '' } = {}) {
+    const result = { date, watered: [], skipped: [], failed: [] }
+    const uniquePlantIds = [...new Set(plantIds)]
+
+    if (!isISODate(date)) {
+      result.failed = uniquePlantIds.map((plantId) => ({ plantId, reason: '浇水日期无效' }))
+      return result
+    }
+    if (date > todayISO()) {
+      result.failed = uniquePlantIds.map((plantId) => ({ plantId, reason: '不能为未来日期补录浇水' }))
+      return result
+    }
+
+    uniquePlantIds.forEach((plantId) => {
+      try {
+        const plant = state.plants.find((item) => item.id === plantId)
+        if (!plant) {
+          result.failed.push({ plantId, reason: '植物不存在或已被删除' })
+          return
+        }
+        if (plant.alive === false) {
+          result.failed.push({ plantId, plantName: plant.name, reason: '已移除的植物不能记录浇水' })
+          return
+        }
+        if (plant.purchaseDate && date < plant.purchaseDate) {
+          result.failed.push({ plantId, plantName: plant.name, reason: '浇水日期不能早于购买日期' })
+          return
+        }
+
+        const alreadyWatered =
+          plant.lastWateredDate === date ||
+          state.careRecords.some(
+            (record) => record.type === '浇水' && record.plantId === plantId && record.date === date,
+          )
+        if (alreadyWatered) {
+          result.skipped.push({ plantId, plantName: plant.name, reason: '当天已有浇水记录' })
+          return
+        }
+
+        const record = {
+          id: createId('care'),
+          plantId,
+          date,
+          type: '浇水',
+          amount,
+          note,
+          photo: '',
+        }
+        state.careRecords.unshift(record)
+        plant.lastWateredDate = getLatestWateringDate(plant, state.careRecords) || date
+        result.watered.push({ plantId, plantName: plant.name })
+      } catch (error) {
+        const plant = state.plants.find((item) => item.id === plantId)
+        result.failed.push({
+          plantId,
+          plantName: plant?.name,
+          reason: error?.message || '保存浇水记录失败',
+        })
+      }
+    })
+
+    return result
   }
 
   function addGrowthRecord(payload) {
@@ -168,6 +244,7 @@ export function useGardenStore() {
     leaderboards,
     addPlant,
     addCareRecord,
+    batchWaterPlants,
     addGrowthRecord,
     addPestRecord,
     getPlantTimeline,
