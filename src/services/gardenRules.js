@@ -23,6 +23,22 @@ export function getDueWateringPlants(plants, today = todayISO()) {
     .sort((a, b) => statusWeight(b.wateringStatus) - statusWeight(a.wateringStatus))
 }
 
+export function hasWateringRecord(plantId, careRecords, date) {
+  return careRecords.some(
+    (record) => record.plantId === plantId && record.type === '浇水' && record.date === date,
+  )
+}
+
+export function suggestWateringAmount(plant) {
+  const potSize = parseInt(plant.potSize, 10)
+  if (Number.isNaN(potSize) || potSize <= 0) return '约 200ml'
+  if (potSize >= 30) return '约 800ml'
+  if (potSize >= 25) return '约 600ml'
+  if (potSize >= 20) return '约 400ml'
+  if (potSize >= 15) return '约 250ml'
+  return '约 150ml'
+}
+
 export function getDashboard(plants, careRecords, growthRecords) {
   const currentMonth = monthOf(todayISO())
   const alivePlants = plants.filter((plant) => plant.alive !== false)

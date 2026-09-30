@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import AchievementBoard from './components/AchievementBoard.vue'
 import DashboardPanel from './components/DashboardPanel.vue'
 import Leaderboards from './components/Leaderboards.vue'
@@ -19,11 +20,22 @@ const {
   leaderboards,
   addPlant,
   addCareRecord,
+  batchWaterPlants,
   addGrowthRecord,
   addPestRecord,
   getPlantTimeline,
   getPlantGrowth,
 } = useGardenStore()
+
+const batchResult = ref(null)
+
+function handleBatchWater({ plantIds, date }) {
+  batchResult.value = batchWaterPlants(plantIds, date)
+}
+
+function clearBatchResult() {
+  batchResult.value = null
+}
 </script>
 
 <template>
@@ -41,7 +53,12 @@ const {
     <section class="main-grid">
       <div class="left-column">
         <WateringReminders :plants="dueWateringPlants" />
-        <PlantList :plants="plantsWithStatus" />
+        <PlantList
+          :plants="plantsWithStatus"
+          :batch-result="batchResult"
+          @batch-water="handleBatchWater"
+          @clear-result="clearBatchResult"
+        />
       </div>
       <PlantForm @submit="addPlant" />
     </section>

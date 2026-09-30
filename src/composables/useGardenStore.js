@@ -10,6 +10,8 @@ import {
   getDashboard,
   getDueWateringPlants,
   getWateringStatus,
+  hasWateringRecord,
+  suggestWateringAmount,
   updateWateringGoal,
 } from '../services/gardenRules'
 
@@ -140,6 +142,40 @@ export function useGardenStore() {
     }
   }
 
+  function batchWaterPlants(plantIds, date = todayISO()) {
+    const result = { succeeded: [], skipped: [], failed: [] }
+
+    for (const plantId of plantIds) {
+      try {
+        const plant = state.plants.find((item) => item.id === plantId)
+        if (!plant) {
+          result.failed.push({ plantId, name: '', reason: '植物档案不存在' })
+          continue
+        }
+        if (hasWateringRecord(plantId, state.careRecords, date)) {
+          result.skipped.push({ plantId, name: plant.name, reason: '该日期已有浇水记录' })
+          continue
+        }
+        const record = {
+          id: createId('care'),
+          plantId,
+          date,
+          type: '浇水',
+          amount: suggestWateringAmount(plant),
+          note: '批量浇水补录',
+          photo: '',
+        }
+        state.careRecords.unshift(record)
+        plant.lastWateredDate = date
+        result.succeeded.push({ plantId, name: plant.name })
+      } catch (error) {
+        result.failed.push({ plantId, name: '', reason: error.message || '未知错误' })
+      }
+    }
+
+    return result
+  }
+
   function addGrowthRecord(payload) {
     state.growthRecords.unshift({ ...payload, id: createId('growth') })
   }
@@ -168,6 +204,7 @@ export function useGardenStore() {
     leaderboards,
     addPlant,
     addCareRecord,
+    batchWaterPlants,
     addGrowthRecord,
     addPestRecord,
     getPlantTimeline,
